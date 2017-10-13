@@ -14,6 +14,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 
+import pmtischlerLib.Pid;
+
 @Autonomous(name="Base Auto", group="Pushbot")
 @Disabled
 public class BaseAuto extends LinearOpMode {
@@ -21,18 +23,20 @@ public class BaseAuto extends LinearOpMode {
     /* Declare OpMode members. */
     OneTwoFiveBot robot   = new OneTwoFiveBot();   // Use a Pushbot's hardware
     Vision vision;
-    private ElapsedTime runtime = new ElapsedTime();
+    PidConstants pids;
+    Pid driveDistPid;
+    Pid anglePid;
+    ColorProvider colorProvider;
 
-    static final double     COUNTS_PER_MOTOR_REV    = 1440 ;    // TODO: find encoder thing
-    static final double     DRIVE_GEAR_REDUCTION    = 2.0 ;     // TODO: get from Nathan
-    static final double     WHEEL_DIAMETER_INCHES   = 4.0 ;     // TODO: measure
-    static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-            (WHEEL_DIAMETER_INCHES * 3.1415);
-    static final double     DRIVE_SPEED             = 0.6;
-    static final double     TURN_SPEED              = 0.5;
+    public BaseAuto(int directionToJewels, int color, int shelfToFrontOrSide, ColorProvider colorProvider){
+        this.colorProvider = colorProvider;
+    }
 
-    public BaseAuto(int directionToJewels, int color){
-
+    public int doSomethingWithColor(){
+        if(colorProvider.getColor() == Color.BLUE){
+            return 1;
+        }
+        return 0;
     }
 
     @Override
@@ -43,6 +47,7 @@ public class BaseAuto extends LinearOpMode {
          */
         robot.init(hardwareMap);
         vision = new Vision(hardwareMap);
+        pids = new PidConstants();
         runVisionLoop();
 
         // Send telemetry message to signify robot waiting;
@@ -62,11 +67,11 @@ public class BaseAuto extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // Step through each leg of the path,
-        // Note: Reverse movement is obtained by setting a negative distance (not speed)
-        encoderDrive(DRIVE_SPEED,  48,  48, 5.0);  // S1: Forward 47 Inches with 5 Sec timeout
-        encoderDrive(TURN_SPEED,   12, -12, 4.0);  // S2: Turn Right 12 Inches with 4 Sec timeout
-        encoderDrive(DRIVE_SPEED, -24, -24, 4.0);  // S3: Reverse 24 Inches with 4 Sec timeout
+
+        driveDistPid = pids.getPid(PidSubsystem.DRIVE);
+        anglePid = pids.getPid(PidSubsystem.ANGLE);
+
+        // Step through each leg of the path
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
@@ -103,15 +108,6 @@ public class BaseAuto extends LinearOpMode {
 
             telemetry.update();
         }
-    }
-
-    /*
-     *PID
-     */
-    public void encoderDrive(double speed,
-                             double leftInches, double rightInches,
-                             double timeoutS) {
-        //TODO
     }
 
     String format(OpenGLMatrix transformationMatrix) {
